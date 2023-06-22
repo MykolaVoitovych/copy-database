@@ -4,7 +4,7 @@ namespace Mykolavoitovych\CopyDatabase;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
-use App\Jobs\CopyDatabaseDataJob;
+use Mykolavoitovych\CopyDatabase\Jobs\CopyDatabaseDataJob;
 
 class CopyDatabase extends Command
 {

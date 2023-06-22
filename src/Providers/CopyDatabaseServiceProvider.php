@@ -31,5 +31,9 @@ class CopyDatabaseServiceProvider extends ServiceProvider
                 CopyDatabase::class,
             ]);
         }
+
+        $this->publishes([
+            __DIR__.'/../config/copy-database.php' => config_path('copy-database.php')
+        ], 'copy-database');
     }
 }
