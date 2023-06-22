@@ -17,7 +17,7 @@ class CopyDatabase extends Command
         $tables = DB::connection($copyFromConnection)->getDoctrineSchemaManager()->listTableNames();
 
         //copy database structure
-        $this->copyDatabaseStructure($tables);
+        $this->copyDatabaseStructure($tables, $copyFromConnection);
 
         $this->info('Database structure copied successfully.');
 
@@ -29,15 +29,27 @@ class CopyDatabase extends Command
         $this->info('Database copy jobs dispatched successfully.');
     }
 
-    protected function copyDatabaseStructure($tables)
+    protected function copyDatabaseStructure($tables, $copyFromConnection)
     {
+        // Disable foreign key checks temporarily
+        \DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
         foreach ($tables as $table) {
             // Drop table if it exists in staging
             DB::statement("DROP TABLE IF EXISTS `$table`");
 
-            // Copy the table structure from production to staging
-            $copyQuery = "CREATE TABLE `$table` LIKE `$this->productionConnection`.`$table`";
-            DB::statement($copyQuery);
+            $copyFromDBName = config("database.connections.$copyFromConnection.database");
+
+            // Get the table structure from production
+            $structureQuery = "SHOW CREATE TABLE `$copyFromDBName`.`$table`";
+            $structureResult = DB::connection($copyFromConnection)->selectOne($structureQuery);
+
+            // Create the table with the same structure in staging
+            $createTableQuery = $structureResult->{'Create Table'};
+            DB::statement($createTableQuery);
         }
+
+        // Re-enable foreign key checks
+        \DB::statement('SET FOREIGN_KEY_CHECKS=1');
     }
 }

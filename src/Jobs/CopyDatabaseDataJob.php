@@ -16,6 +16,7 @@ class CopyDatabaseDataJob implements ShouldQueue
     protected $copyFromConnection;
 
     protected $table;
+    protected $batchSize;
 
     /**
      * Create a new job instance.
@@ -26,6 +27,7 @@ class CopyDatabaseDataJob implements ShouldQueue
     {
         $this->copyFromConnection = config('copy-database.from');
         $this->table = $table;
+        $this->batchSize = config('copy-database.batch-size');
     }
 
     /**
@@ -38,9 +40,15 @@ class CopyDatabaseDataJob implements ShouldQueue
         // Disable foreign key checks temporarily
         \DB::statement('SET FOREIGN_KEY_CHECKS=0');
 
-        // Copy the data from production to staging
-        $copyQuery = "INSERT INTO `$this->table` SELECT * FROM `$this->copyFromConnection`.`$this->table`";
-        \DB::statement($copyQuery);
+        // Get the total number of rows in the table
+        $totalRows = \DB::connection($this->copyFromConnection)->table($this->table)->count();
+
+        // Copy the data in batches
+        for ($startRow = 0; $startRow < $totalRows; $startRow += $this->batchSize) {
+            $endRow = min($startRow + $this->batchSize, $totalRows);
+
+            InsertTableRowsJob::dispatch($this->table, $startRow, $endRow);
+        }
 
         // Re-enable foreign key checks
         \DB::statement('SET FOREIGN_KEY_CHECKS=1');

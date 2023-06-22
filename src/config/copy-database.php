@@ -7,5 +7,8 @@ return [
     //array of tables which we don't have to copy
     'except' => [
 
-    ]
+    ],
+
+    //count of rows for each job
+    'batch-size' => 500000
 ];
