@@ -1,0 +1,26 @@
+{
+    "name": "mykolavoitovych/copy-database",
+    "description": "This library should help you to copy your database between different environments",
+    "authors": [
+        {
+            "name": "MykolaVoitovych",
+            "email": "mykolavoitovychv@gmail.com"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Mykolavoitovych\\CopyDatabase\\": "src/"
+        }
+    },
+    "require": {
+        "illuminate/console": "^6.0|^7.0|^8.0|^9.0|^10.0",
+        "illuminate/support": "^6.0|^7.0|^8.0|^9.0|^10.0",
+        "php": "^7.2.5|^8.0"
+    },
+    "minimum-stability": "dev",
+    "config": {
+        "sort-packages": true,
+        "preferred-install": "dist",
+        "optimize-autoloader": true
+    }
+}
