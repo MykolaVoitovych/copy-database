@@ -45,7 +45,7 @@ class CopyDatabaseDataJob implements ShouldQueue
 
         // Copy the data in batches
         for ($startRow = 0; $startRow < $totalRows; $startRow += $this->batchSize) {
-            $endRow = min($startRow + $this->batchSize, $totalRows);
+            $endRow = min($startRow + $this->batchSize - 1, $totalRows);
 
             InsertTableRowsJob::dispatch($this->table, $startRow, $endRow);
         }
