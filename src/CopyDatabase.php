@@ -8,7 +8,7 @@ use Mykolavoitovych\CopyDatabase\Jobs\CopyDatabaseDataJob;
 
 class CopyDatabase extends Command
 {
-    protected $signature = 'database:copy';
+    protected $signature = 'database:copy {only?}';
 
     public function handle()
     {
@@ -16,13 +16,26 @@ class CopyDatabase extends Command
 
         $tables = DB::connection($copyFromConnection)->getDoctrineSchemaManager()->listTableNames();
 
+        if ($only = $this->argument('only')) {
+            if (!in_array($only, $tables)) {
+                $this->error('Origin database doesn\'t have such table');
+                return;
+            }
+            $structureTables = [$only];
+            $dataTables = [$only];
+        } else {
+            $exceptTables = config('copy-database.except');
+            $structureTables = array_diff($tables, $exceptTables['structure']);
+            $dataTables = array_diff($tables, $exceptTables['data']);
+        }
+
         //copy database structure
-        $this->copyDatabaseStructure($tables, $copyFromConnection);
+        $this->copyDatabaseStructure($structureTables, $copyFromConnection);
 
         $this->info('Database structure copied successfully.');
 
         // Dispatch job to copy database data for each table
-        foreach ($tables as $table) {
+        foreach ($dataTables as $table) {
             CopyDatabaseDataJob::dispatch($table);
         }
 
