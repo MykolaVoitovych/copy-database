@@ -17,6 +17,7 @@ class InsertTableRowsJob implements ShouldQueue
     protected $table;
     protected $startRow;
     protected $endRow;
+    protected $jobId;
 
     /**
      * Create a new job instance.
@@ -27,12 +28,13 @@ class InsertTableRowsJob implements ShouldQueue
      * @param int $startRow
      * @param int $endRow
      */
-    public function __construct($table, $startRow, $endRow)
+    public function __construct($table, $startRow, $endRow, $jobId = null)
     {
         $this->copyFromConnection = config('copy-database.from');
         $this->table = $table;
         $this->startRow = $startRow;
         $this->endRow = $endRow;
+        $this->jobId = $jobId;
     }
 
     /**
@@ -56,5 +58,9 @@ class InsertTableRowsJob implements ShouldQueue
         }
         // Re-enable foreign key checks
         \DB::statement('SET FOREIGN_KEY_CHECKS=1');
+
+        if ($this->jobId) {
+            \DB::table('db_import_jobs')->where('id', $this->jobId)->delete();
+        }
     }
 }

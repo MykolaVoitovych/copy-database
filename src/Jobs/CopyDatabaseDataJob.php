@@ -43,11 +43,21 @@ class CopyDatabaseDataJob implements ShouldQueue
         // Get the total number of rows in the table
         $totalRows = \DB::connection($this->copyFromConnection)->table($this->table)->count();
 
-        // Copy the data in batches
-        for ($startRow = 0; $startRow < $totalRows; $startRow += $this->batchSize) {
-            $endRow = min($startRow + $this->batchSize - 1, $totalRows);
+        if ($totalRows < $this->batchSize) {
+            InsertTableRowsJob::dispatch($this->table, 0, $totalRows);
+        } else {
+            // Copy the data in batches
+            for ($startRow = 0; $startRow < $totalRows; $startRow += $this->batchSize) {
+                $endRow = min($startRow + $this->batchSize, $totalRows);
 
-            InsertTableRowsJob::dispatch($this->table, $startRow, $endRow);
+                \DB::table('db_import_jobs')
+                    ->insert([
+                        'table_name' => $this->table,
+                        'start_row' => $startRow,
+                        'end_row' => $endRow,
+                        'status' => 'pending',
+                    ]);
+            }
         }
 
         // Re-enable foreign key checks

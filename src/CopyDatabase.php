@@ -34,6 +34,9 @@ class CopyDatabase extends Command
 
         $this->info('Database structure copied successfully.');
 
+        //run migrations
+        $this->call('migrate');
+
         // Dispatch job to copy database data for each table
         foreach ($dataTables as $table) {
             CopyDatabaseDataJob::dispatch($table);
