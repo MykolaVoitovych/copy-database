@@ -3,7 +3,9 @@
 namespace Mykolavoitovych\CopyDatabase;
 
 use Illuminate\Console\Command;
+use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Mykolavoitovych\CopyDatabase\Jobs\CopyDatabaseDataJob;
 
 class CopyDatabase extends Command
@@ -34,8 +36,7 @@ class CopyDatabase extends Command
 
         $this->info('Database structure copied successfully.');
 
-        //run migrations
-        $this->call('migrate');
+        $this->createDbJobsTable();
 
         // Dispatch job to copy database data for each table
         foreach ($dataTables as $table) {
@@ -67,5 +68,19 @@ class CopyDatabase extends Command
 
         // Re-enable foreign key checks
         \DB::statement('SET FOREIGN_KEY_CHECKS=1');
+    }
+
+    protected function createDbJobsTable()
+    {
+        if (!Schema::hasTable('db_import_jobs')) {
+            Schema::create('db_import_jobs', function (Blueprint $table) {
+                $table->id();
+                $table->string('table_name');
+                $table->string('start_row');
+                $table->string('end_row');
+                $table->enum('status', ['processing', 'pending']);
+                $table->timestamps();
+            });
+        }
     }
 }
