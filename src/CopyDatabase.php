@@ -81,6 +81,8 @@ class CopyDatabase extends Command
                 $table->enum('status', ['processing', 'pending']);
                 $table->timestamps();
             });
+        } else {
+            DB::table('db_import_jobs')->truncate();
         }
     }
 }

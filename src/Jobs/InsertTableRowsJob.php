@@ -46,16 +46,30 @@ class InsertTableRowsJob implements ShouldQueue
     {
         // Disable foreign key checks temporarily
         \DB::statement('SET FOREIGN_KEY_CHECKS=0');
-        $copyFromDBName = config("database.connections.$this->copyFromConnection.database");
 
-        // Retrieve the rows from the production connection
-        $rowsQuery = "SELECT * FROM `$copyFromDBName`.`$this->table`LIMIT $this->startRow, " . ($this->endRow - $this->startRow);
-        $rows = DB::connection($this->copyFromConnection)->select($rowsQuery);
+        //getIndexes
+        $indexes = \Schema::getConnection()->getDoctrineSchemaManager()->listTableIndexes($this->table);
+
+        $recordsQuery = DB::connection($this->copyFromConnection)
+            ->table($this->table);
+
+        if (!empty($indexes['primary'])) {
+            $columns = $indexes['primary']->getColumns();
+            $recordsQuery->orderBy($columns[0]);
+        }
+
+        $records = $recordsQuery->skip($this->startRow)
+            ->take($this->endRow - $this->startRow)
+            ->get();
 
         // Insert the retrieved rows into the staging connection
-        foreach ($rows as $row) {
-            DB::table($this->table)->insert((array) $row);
+        $data = [];
+        foreach ($records as $record) {
+            $data[] = get_object_vars($record);
         }
+
+        DB::table($this->table)->insert($data);
+
         // Re-enable foreign key checks
         \DB::statement('SET FOREIGN_KEY_CHECKS=1');
 
