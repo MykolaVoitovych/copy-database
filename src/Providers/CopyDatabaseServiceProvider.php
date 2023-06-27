@@ -34,8 +34,6 @@ class CopyDatabaseServiceProvider extends ServiceProvider
             ]);
         }
 
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
-
         $this->publishes([
             __DIR__.'/../config/copy-database.php' => config_path('copy-database.php')
         ], 'copy-database');
