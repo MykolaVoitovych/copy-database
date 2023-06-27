@@ -58,17 +58,17 @@ class InsertTableRowsJob implements ShouldQueue
             $recordsQuery->orderBy($columns[0]);
         }
 
-        $records = $recordsQuery->skip($this->startRow)
+        $recordsQuery->skip($this->startRow)
             ->take($this->endRow - $this->startRow)
-            ->get();
+            // Insert the retrieved rows into the staging connection
+            ->chunk(100, function ($records) {
+                    $data = [];
+                    foreach ($records as $record) {
+                        $data[] = get_object_vars($record);
+                    }
+                    DB::table($this->table)->insert($data);
+                });
 
-        // Insert the retrieved rows into the staging connection
-        $data = [];
-        foreach ($records as $record) {
-            $data[] = get_object_vars($record);
-        }
-
-        DB::table($this->table)->insert($data);
 
         // Re-enable foreign key checks
         \DB::statement('SET FOREIGN_KEY_CHECKS=1');
