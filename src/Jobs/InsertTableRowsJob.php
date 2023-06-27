@@ -55,20 +55,33 @@ class InsertTableRowsJob implements ShouldQueue
 
         if (!empty($indexes['primary'])) {
             $columns = $indexes['primary']->getColumns();
-            $recordsQuery->orderBy($columns[0]);
+            $orderBy = $columns[0];
+
+        } else {
+            $columns = \Schema::getColumnListing($this->table);
+            if (in_array('id', $columns)) {
+                $orderBy = 'id';
+            } elseif (in_array('created_at', $columns)) {
+                $orderBy = 'created_at';
+            } else {
+                $orderBy = $columns[0];
+            }
         }
 
-        $recordsQuery->skip($this->startRow)
+        $records = $recordsQuery->orderBy($orderBy)
+            ->skip($this->startRow)
             ->take($this->endRow - $this->startRow)
-            // Insert the retrieved rows into the staging connection
-            ->chunk(100, function ($records) {
-                    $data = [];
-                    foreach ($records as $record) {
-                        $data[] = get_object_vars($record);
-                    }
-                    DB::table($this->table)->insert($data);
-                });
+            ->get();
+        // Insert the retrieved rows into the staging connection
+        $chunks = $records->chunk(1000);
 
+        foreach ($chunks as $chunk) {
+            $data = [];
+            foreach ($chunk as $record) {
+                $data[] = get_object_vars($record);
+            }
+            DB::table($this->table)->insert($data);
+        }
 
         // Re-enable foreign key checks
         \DB::statement('SET FOREIGN_KEY_CHECKS=1');
